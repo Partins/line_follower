@@ -1,26 +1,4 @@
-/*
-  Blink
 
-  Turns an LED on for one second, then off for one second, repeatedly.
-
-  Most Arduinos have an on-board LED you can control. On the UNO, MEGA and ZERO
-  it is attached to digital pin 13, on MKR1000 on pin 6. LED_BUILTIN is set to
-  the correct LED pin independent of which board is used.
-  If you want to know what pin the on-board LED is connected to on your Arduino
-  model, check the Technical Specs of your board at:
-  https://www.arduino.cc/en/Main/Products
-
-  modified 8 May 2014
-  by Scott Fitzgerald
-  modified 2 Sep 2016
-  by Arturo Guadalupi
-  modified 8 Sep 2016
-  by Colby Newman
-
-  This example code is in the public domain.
-
-  http://www.arduino.cc/en/Tutorial/Blink
-*/
 #include <DueTimer.h>
 int task = 4;
 
@@ -83,49 +61,35 @@ void intrL(){
 }
 
 void timerInterrupt(){
- 
     rPulsesPerSecond = rCntr/seconds;
-    //rCntr = 0;
-
     lPulsesPerSecond = lCntr/seconds;
-    
-
     rState = 1;
-    
-
-  //ledOn = !ledOn; For testing the interrupt
- 
 }
 
 void setup() {
   Serial.begin(115200);
-  
   switch (task) {
       case 1:
           Serial.println("Arduin IDE is installed");
           break;
-      
       case 2: // Flashing LED
           pinMode(LED_BUILTIN, OUTPUT); 
           break; 
-
       case 3: // Counting pulses
           pinMode(rEnc, INPUT_PULLUP);
           pinMode(lEnc, INPUT_PULLUP);
           attachInterrupt(digitalPinToInterrupt(rEnc), intrR, RISING);
           attachInterrupt(digitalPinToInterrupt(lEnc), intrL, RISING);     
       break;
-
       case 4: // Pulse time
           pinMode(rEnc, INPUT_PULLUP);
           pinMode(lEnc, INPUT_PULLUP);
-           pinMode(LED_BUILTIN, OUTPUT);
+          pinMode(LED_BUILTIN, OUTPUT);
           attachInterrupt(digitalPinToInterrupt(rEnc), intrR, RISING);
           attachInterrupt(digitalPinToInterrupt(lEnc), intrL, RISING);  
           Timer3.attachInterrupt(timerInterrupt);
           Timer3.start(uTimerLength);   
       break;
-      
   }
 }
 
@@ -136,14 +100,13 @@ while(1){
     case 2: // Flashing LED
         for (int i = 0; i<20; i++){
             Serial.println("First loop");
-            digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+            digitalWrite(LED_BUILTIN, HIGH); 
             delay(1000/(frequency*multiplier));
             digitalWrite(LED_BUILTIN, LOW);
             delay(1000/(frequency*multiplier));
         }
         multiplier = multiplier + 10;
     break;
-        
     case 3: // Counting pulses
         if (rState == 1){
           Serial.print("Right pulses: ");
@@ -156,7 +119,6 @@ while(1){
           lState = 0;
         }       
     break;
-
     case 4:
     if(rState > 0){
         Serial.print("ms between pulses R: ");
@@ -169,29 +131,8 @@ while(1){
         rState = 0;
         lCntr = 0;
         rCntr = 0;
-        
     }
     break;
-
-    
   }
-
 }
 }
-//  if (pulseCounter == 1){
-//    startTime = millis();
-//    }
-//    if (pulseCounter == 10){
-//    endTime = millis(); 
-//    }
-//    
-//  if (pulseCounter == 10){
-//    Serial.print("Time between pulses");
-//    Serial.println((endTime-startTime)/pulseCounter);
-//    pulseCounter = 0;
-//  }
-//  Serial.print("pulseCounter: ");
-//  Serial.println(pulseCounter);
-//   if (pulseCounter == 10){
-//    pulseCounter = 0;
-//  }
