@@ -1,6 +1,8 @@
 
 #include <DueTimer.h>
-int task = 4;
+
+// FOR TASK 3 UNCOMMENT LINE 57 and 63!!!
+int task = 3;
 
 
 volatile byte state = LOW;
@@ -37,6 +39,7 @@ int endTime = 0;
 
 /* Task 4 */
 /* Measure time between pulses */
+
     int numOfPulses = 10;
     int rTime = 0;
     int lTime = 0;
@@ -44,26 +47,27 @@ int endTime = 0;
     int refTimeL = 0;
     double rPulsesPerSecond = 0;
     double lPulsesPerSecond = 0;
-    double seconds = 1;
+    double seconds = .5;
     double uTimerLength = 1000000*seconds;
     bool ledOn = false;
 
 
 void intrR(){
   rCntr++;
-  //rState = 1;
+  rState = 1;
   
 }
 
 void intrL(){
   lCntr++;
-  //lState = 1;
+  lState = 1;
 }
 
 void timerInterrupt(){
     rPulsesPerSecond = rCntr/seconds;
     lPulsesPerSecond = lCntr/seconds;
     rState = 1;
+    lState = 1;
 }
 
 void setup() {
@@ -76,10 +80,10 @@ void setup() {
           pinMode(LED_BUILTIN, OUTPUT); 
           break; 
       case 3: // Counting pulses
-          pinMode(rEnc, INPUT_PULLUP);
-          pinMode(lEnc, INPUT_PULLUP);
-          attachInterrupt(digitalPinToInterrupt(rEnc), intrR, RISING);
-          attachInterrupt(digitalPinToInterrupt(lEnc), intrL, RISING);     
+          pinMode(4, INPUT_PULLUP);
+          pinMode(5, INPUT_PULLUP);
+          attachInterrupt(digitalPinToInterrupt(4), intrL, CHANGE);
+          attachInterrupt(digitalPinToInterrupt(5), intrL, CHANGE);     
       break;
       case 4: // Pulse time
           pinMode(rEnc, INPUT_PULLUP);
@@ -108,7 +112,7 @@ while(1){
         multiplier = multiplier + 10;
     break;
     case 3: // Counting pulses
-        if (rState == 1){
+        if (lState == 1){
           Serial.print("Right pulses: ");
           Serial.println(rCntr);
           rState = 0;
@@ -120,15 +124,16 @@ while(1){
         }       
     break;
     case 4:
-    if(rState > 0){
+    if(rState > 0 || lState > 0){
         Serial.print("ms between pulses R: ");
         Serial.println(1000/rPulsesPerSecond,10);
-        Serial.println(rCntr);
-        Serial.print("Pulses per second L: ");
+        //Serial.println(rCntr);
+        Serial.print("ms between pulses L: ");
         Serial.println(1000/lPulsesPerSecond,10);
-        Serial.println(lCntr);
+        //Serial.println(lCntr);
         digitalWrite(LED_BUILTIN, ledOn);
         rState = 0;
+        lState = 0;
         lCntr = 0;
         rCntr = 0;
     }
