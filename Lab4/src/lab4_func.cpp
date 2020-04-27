@@ -22,24 +22,21 @@ void turnLeft(int speed, Wheel *rightWheel, Wheel *leftWheel) {
 void readAllSensors(SensorBar *sensor) {
     uint16_t tmp = 0;
     uint16_t calibrationCounter = 0;
-    uint16_t tmpStart[sensor->kNumOfSensors];
-
     for (int i = 0; i < sensor->kNumOfSensors; i++) {
-        tmpStart[i] = analogRead(sensor->sensorPins[i]);
+        tmp = analogRead(sensor->sensorPins[i]);
+/*         if (tmp > sensor->calibrationValues[i] && tmp > tmpStart[i]*5) {
+            sensor->calibrationValues[i] = tmp;
+        } */
     }
-    while (calibrationCounter < 2) {
-        for (int i = 0; i < sensor->kNumOfSensors; i++) {
-            tmp = analogRead(sensor->sensorPins[i]);
-            if (tmp > sensor->calibrationValues[i] && tmp > tmpStart[i]*5) {
-                sensor->calibrationValues[i] = tmp;
-                if (i == 1 || i == 8)
-                    calibrationCounter++;
-            }
-        }
-    }
+    
 }
 
 bool sensCalib(Wheel *rightWheel, Wheel *leftWheel, SensorBar *sensor) {
+    uint16_t tmpStart[sensor->kNumOfSensors];
+    // Initialize sensors with some values
+    for (int i = 0; i < sensor->kNumOfSensors; i++) {
+        tmpStart[i] = analogRead(sensor->sensorPins[i]);
+    }
     turnLeft(50, rightWheel, leftWheel);
     readAllSensors(sensor);
     turnRight(50, rightWheel, leftWheel);
