@@ -16,7 +16,7 @@ typedef struct {
   Adafruit_DCMotor *dcMotor;
   float velocity;
   float timedPulses;
-  bool forwardDirection;
+  int direction;  // Either FORWARD or BACKWARD
 }Wheel;
 
 struct SensorBar {
