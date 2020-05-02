@@ -54,12 +54,12 @@ if ~isempty(instrfind) % closes the port if it was open
 end
 arduinoSerial = serial(ThisPort, 'BaudRate', ThisBaudRate, 'FlowControl', 'hardware');
 %% Connect the serial port to Arduino
-arduinoSerial.InputBufferSize = 512; % read only one byte every time
+arduinoSerial.InputBufferSize = 1024; % read only one byte every time
 arduinoSerial.Terminator = 'CR/LF';
 fopen(arduinoSerial);
 % Timing
 Tf = 50;
-Ts = 0.01; % * sampling time (from running microcontroller program)
+Ts = 0.001; % * sampling time (from running microcontroller program)
 n = ((Tf - 0)/Ts) + 1;
 t = 0:Ts:10;
 % current sample
