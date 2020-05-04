@@ -15,6 +15,7 @@ typedef struct {
   const uint8_t MOTOR_NUMBER;
   Adafruit_DCMotor *dcMotor;
   double velocity;
+  float setpointVelocity;
   double velocityArr[5];
   int arrCounter;
   float timedPulses;
@@ -26,16 +27,13 @@ typedef struct {
   float iGain;
   float dGain;
   float tot_integral;
+  float totDerivative;
   float derivative;
   float pGainAngle;
-  float iGainAngle;
-  float dGainAngle;
-  float tot_integralAngle;
-  float derivativeAngle;
 }Controller;
 
 struct SensorBar {
-  static const uint8_t kNumOfSensors{8};
+  static const uint8_t kNumOfSensors{16};
   int calibrationValues[kNumOfSensors];
   int sensorValues[kNumOfSensors];
   bool lineDetected[kNumOfSensors];
@@ -45,9 +43,16 @@ struct SensorBar {
   float error;
   int sensorSum;
   int cntr;
+  float d;
+  float goalAngle;
+  float xDot;
+  float yDot;
+  float thetaDot;
+  float theta;
   // uint8_t sensorPins[8] = {A0, A1, A2, A7, A8, A9, A10, A11};  // Analog
-  uint8_t sensorPins[8] = {6, 7, 8, 9, 10, 11, 12, 13};  // Digital
-  uint8_t weights[8] = {10, 20, 30, 40, 50, 60, 70 ,80};
+  uint8_t sensorPins[16] = {22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37};  // Digital
+  int8_t weights[8] = {20, 15, 10, 5, -5, -20, -15, -20};
+  float sensorAngles[16] = {26.7, 23.6, 20.3, 16.8, 13.2, 9.5, 5.8, 1.9, -1.9, -5.8, -9.5, -13.2, -16.8, -20.3, -23.6, -26.7};
 };
 
 
@@ -58,9 +63,10 @@ void readAllSensorsAnalog(SensorBar *sensor);
 void readAllSensorsDigital(SensorBar *sensor);
 void runMotors(Wheel *rightWheel, Wheel *leftWheel);
 void calculateVelocity(Wheel *rightWheel, Wheel *leftWheel, float seconds);
-void calculateTheta(Wheel *rightWheel, Wheel *leftWheel, SensorBar *sensor);
+void calculateTheta(Wheel *rightWheel, Wheel *leftWheel, SensorBar *sensor, float seconds);
 void goStraight(Wheel *rightWheel, Wheel *leftWheel);
 void piController(float setpoint, Controller *controller, Wheel *wheel);
 void angleController(int setpoint, SensorBar *sensor, Controller *controller);
-
+void findThetaOffset(SensorBar *sensor);
+void angleSpeedController(float setpoint, Wheel *rightWheel, Wheel *leftWheel, Controller *controller, SensorBar *sensor, float seconds);
 #endif  // SRC_LAB4_H_

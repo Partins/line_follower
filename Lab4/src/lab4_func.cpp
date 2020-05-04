@@ -79,18 +79,23 @@ void calculateVelocity(Wheel *rightWheel, Wheel *leftWheel, float seconds) {
     leftWheel->velocity = 0.12566*leftWheel->timedPulses/(618*seconds);
 }
 
-void calculateTheta(Wheel *rightWheel, Wheel *leftWheel, SensorBar *sensor) {
-    float thetaDot = 0;
-    thetaDot = (rightWheel->velocity - leftWheel->velocity) / 0.153;
-    sensor->angle = sensor->angle + thetaDot;
+void calculateTheta(Wheel *rightWheel, Wheel *leftWheel, SensorBar *sensor, float seconds) {
+    calculateVelocity(rightWheel, leftWheel, seconds);
+    sensor->thetaDot = (rightWheel->velocity - leftWheel->velocity) / 0.147;
+    sensor->angle = sensor->angle + sensor->thetaDot;
 }
 
 void piController(float setpoint, Controller *controller, Wheel *wheel) {
-    float error = setpoint-wheel->velocity;
+    float error = setpoint;  //-wheel->velocity;
+    if(error<0) {
+        error = -1*error;
+    }
     controller->tot_integral += error;
     wheel->speed = (controller->pGain*error+controller->iGain*controller->tot_integral)*255;
 
 }
+
+
 
 void angleController(int setpoint, SensorBar *sensor, Controller *controller) {
     sensor->sensorSum = 0;
@@ -101,11 +106,38 @@ void angleController(int setpoint, SensorBar *sensor, Controller *controller) {
         sensor->sensorSum = sensor->sensorSum+sensor->weights[i];
         cntr++;
     }
+    if (cntr > 0){
      error = setpoint-sensor->sensorSum/cntr;
-     error = error*controller->pGain+error*controller->iGainAngle;
      sensor->angleSetpoint = error;
-     sensor->cntr = cntr;
+    } else {
+        sensor->angleSetpoint = 0;
     }
+    }
+}
+
+void findThetaOffset(SensorBar *sensor) {
+    int cntr = 0;
+    for(int i = 0; i < sensor->kNumOfSensors; i++) {
+        if (sensor->lineDetected[i]) {
+            sensor->goalAngle = sensor->goalAngle + sensor->sensorAngles[i];
+            cntr++;
+        }
+    }
+    if(cntr > 0) {
+    sensor->goalAngle = sensor->goalAngle/cntr;
+    } else {
+        sensor->goalAngle = 0;
+    }
+}
+
+void angleSpeedController(float setpoint, Wheel *rightWheel, Wheel *leftWheel, Controller *controller, SensorBar *sensor, float seconds) {
+    float prevGoal = sensor->goalAngle;
+    findThetaOffset(sensor);
+    sensor->thetaDot = sensor->goalAngle - prevGoal;
+    rightWheel->setpointVelocity = (2*setpoint + sensor->thetaDot*0.147);// / (2*0.04);
+    leftWheel->setpointVelocity = (2*setpoint - sensor->thetaDot*0.147);// / (2*0.04);
+  
+
 }
 
 
