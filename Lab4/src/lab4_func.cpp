@@ -41,7 +41,7 @@ void goStraight(Wheel *rightWheel, Wheel *leftWheel) {
 void readAllSensorsAnalog(SensorBar *sensor) { 
     for (int i = 0; i < sensor->kNumOfSensors; i++) {
         sensor->sensorValues[i] = analogRead(sensor->sensorPins[i]);
-        if (sensor->sensorValues[i] > sensor->calibrationValues[i]*0.7) {
+        if (sensor->sensorValues[i] > sensor->calibrationValues[i]*0.8) {
             sensor->lineDetected[i] = true;
         } else {
             sensor->lineDetected[i] = false;
@@ -73,72 +73,75 @@ void sensCalib(Wheel *rightWheel, Wheel *leftWheel, SensorBar *sensor) {
         }
     }
 }
-
-void calculateVelocity(Wheel *rightWheel, Wheel *leftWheel, float seconds) {
+/* 
+void calculateVelocityDouble(Wheel *rightWheel, Wheel *leftWheel, float seconds) {
+    
     rightWheel->velocity = 0.12566*rightWheel->timedPulses/(618*seconds);
     leftWheel->velocity = 0.12566*leftWheel->timedPulses/(618*seconds);
-}
+} */
 
-void calculateTheta(Wheel *rightWheel, Wheel *leftWheel, SensorBar *sensor, float seconds) {
-    calculateVelocity(rightWheel, leftWheel, seconds);
-    sensor->thetaDot = (rightWheel->velocity - leftWheel->velocity) / 0.147;
-    sensor->angle = sensor->angle + sensor->thetaDot;
+void calculateVelocity(Wheel *wheel, float seconds) {
+
+    wheel->velocity = 0.12566*wheel->timedPulses/(618*seconds);
+
 }
 
 void piController(float setpoint, Controller *controller, Wheel *wheel) {
-    float error = setpoint;  //-wheel->velocity;
-    if(error<0) {
-        error = -1*error;
+    if (setpoint > 1){
+        setpoint = 1;
+    } else if (setpoint < 0) {
+        setpoint= 0;
     }
+    float error = setpoint - wheel->velocity;
+    controller->error = error;
     controller->tot_integral += error;
-    wheel->speed = (controller->pGain*error+controller->iGain*controller->tot_integral)*255;
-
+    wheel->speed = (controller->pGain*error + controller->iGain*controller->tot_integral) * 255;
 }
 
 
-
-void angleController(int setpoint, SensorBar *sensor, Controller *controller) {
-    sensor->sensorSum = 0;
+void findAngle(SensorBar *sensor) {
     int cntr = 0;
-    float error = 0;
-    for (int i = 0; i < sensor->kNumOfSensors; i++) {
+    float theta = 0;
+    //float error = 0;
+    for (int i = 0; i<sensor->kNumOfSensors; i++) { 
         if (sensor->lineDetected[i] == true) {
-        sensor->sensorSum = sensor->sensorSum+sensor->weights[i];
-        cntr++;
-    }
-    if (cntr > 0){
-     error = setpoint-sensor->sensorSum/cntr;
-     sensor->angleSetpoint = error;
-    } else {
-        sensor->angleSetpoint = 0;
-    }
-    }
-}
-
-void findThetaOffset(SensorBar *sensor) {
-    int cntr = 0;
-    for(int i = 0; i < sensor->kNumOfSensors; i++) {
-        if (sensor->lineDetected[i]) {
-            sensor->goalAngle = sensor->goalAngle + sensor->sensorAngles[i];
+            theta = theta + sensor->sensorAngles[i];
             cntr++;
         }
     }
-    if(cntr > 0) {
-    sensor->goalAngle = sensor->goalAngle/cntr;
-    } else {
-        sensor->goalAngle = 0;
+    if (cntr == 0) {  // To not divide by 0
+        cntr = 1;
     }
+    sensor->thetaDot = (theta/cntr - sensor->theta);
+    sensor->theta = theta / cntr;
+    
 }
 
-void angleSpeedController(float setpoint, Wheel *rightWheel, Wheel *leftWheel, Controller *controller, SensorBar *sensor, float seconds) {
-    float prevGoal = sensor->goalAngle;
-    findThetaOffset(sensor);
-    sensor->thetaDot = sensor->goalAngle - prevGoal;
-    rightWheel->setpointVelocity = (2*setpoint + sensor->thetaDot*0.147);// / (2*0.04);
-    leftWheel->setpointVelocity = (2*setpoint - sensor->thetaDot*0.147);// / (2*0.04);
-  
-
+void findGoalPosition(SensorBar *sensor) {
+    float prevYerrorDot = sensor->errorDot;
+    float prevY = sensor->goalY;
+    float pGain = sensor->positionP;
+    float iGain = sensor->positionI;
+    float dGain = sensor->positionD;
+    int cntr = 0;
+    sensor->goalY = 0;
+    
+    for (int i = 0; i<sensor->kNumOfSensors; i++) { 
+        if (sensor->lineDetected[i] == true) {
+            sensor->goalY = sensor->sensorDistances[i]/(119);
+            cntr=1;
+        }
+    }
+    if(cntr == 0) {
+        //sensor->goalY += prevY;
+        sensor->error = prevY;
+        sensor->errorInt += prevY;
+        sensor->errorDot = sensor->errorDot - prevY;
+        cntr++;
+    } else {
+    sensor->goalY = sensor->goalY/cntr;
+    sensor->errorInt += sensor->goalY;
+    sensor->errorDot = sensor->goalY - prevYerrorDot;
+    }
+    sensor->velocitySetpoint = pGain * sensor->goalY   + iGain * sensor->errorInt + dGain * sensor->errorDot;
 }
-
-
-
