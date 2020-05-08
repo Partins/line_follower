@@ -80,12 +80,14 @@ void setup() {
   ptrControllerLeft = &controllerLeft;
 
   ptrControllerRight->tot_integral = 0;
-  ptrControllerRight->pGain = 2;
-  ptrControllerRight->iGain = 0.1;
+  ptrControllerRight->pGain = 0.1;
+  ptrControllerRight->iGain = 0.000001;
+  ptrControllerRight->dGain = 0.1;
 
   ptrControllerLeft->tot_integral = 0;
-  ptrControllerLeft->pGain = 2;
-  ptrControllerLeft->iGain = 0.1;
+  ptrControllerLeft->pGain = 0.1;
+  ptrControllerLeft->iGain = 0.000001;
+  ptrControllerLeft->dGain = 0.1;
 
 
   
@@ -93,7 +95,7 @@ void setup() {
   rightWheel.dcMotor = AFMS.getMotor(rightWheel.MOTOR_NUMBER);
   leftWheel.dcMotor = AFMS.getMotor(leftWheel.MOTOR_NUMBER);
   AFMS.begin();
-  Serial.begin(9600);
+  Serial.begin(115200);
   HC06.begin(115200);
   
   rightWheel.dcMotor->setSpeed(0);
@@ -114,7 +116,7 @@ void setup() {
   delay(2000);
   Serial.println("Loop started");
 }
-float setVelocity = 0.2;
+float setVelocity = 1;
 float setVelocityR = 0;
 float setVelocityL = 0;
 int cntr = 0;
@@ -135,12 +137,41 @@ if (HC06.available() > 0) {
   ptrLeftWheel->dcMotor->setSpeed(0);
   ptrSensorBar->positionP = HC06.parseFloat();
   ptrSensorBar->positionI = HC06.parseFloat();
-  ptrSensorBar->positionD = HC06.parseFloat();
+  ptrSensorBar->positionD = HC06.parseFloat(); 
+  setVelocity = HC06.parseFloat();
+
+/*   ptrControllerRight->pGain = HC06.parseFloat();
+  ptrControllerRight->iGain = HC06.parseFloat();
+  ptrControllerRight->dGain = HC06.parseFloat();
+  
+
+  ptrControllerLeft->pGain = ptrControllerRight->pGain;
+  ptrControllerLeft->iGain = ptrControllerRight->iGain;
+  ptrControllerLeft->dGain = ptrControllerRight->dGain; */
+
+  //setVelocity = 1;
+  ptrRightWheel->direction = FORWARD;
+  ptrLeftWheel->direction = FORWARD;
   ptrSensorBar->errorInt = 0;
+  ptrControllerRight->tot_integral = 0;
+  ptrControllerLeft->tot_integral = 0;
+  ptrControllerLeft->totDerivative = 0;
+  ptrControllerRight->totDerivative = 0;
   ptrSensorBar->errorDot = 0;
   ptrSensorBar->error = 0;
+  ptrRightWheel->counter = 0;
+  ptrLeftWheel->counter = 0;
+  ptrRightWheel->prevCounter = 0;
+  ptrLeftWheel->prevCounter = 0; 
+  ptrControllerRight->lastSpeed = 0;
+  ptrControllerLeft->lastSpeed = 0;
+  ptrControllerLeft->lastError = 0;
+  ptrControllerRight->lastError= 0;
+  HC06.println("New values saved");
   delay(1000);
   run = true;
+  
+
 }
 
 if (timed == true && run == true){
@@ -149,28 +180,34 @@ if (timed == true && run == true){
   findGoalPosition(ptrSensorBar);
   calculateVelocity(ptrRightWheel, seconds); 
   calculateVelocity(ptrLeftWheel, seconds); 
-  setVelocityR = 1+ptrSensorBar->velocitySetpoint;
-  setVelocityL = 1-ptrSensorBar->velocitySetpoint;
-  piController(0.3*setVelocityR, ptrControllerRight, ptrRightWheel);
-  piController(0.3*setVelocityL, ptrControllerLeft, ptrLeftWheel);
+  setVelocityR = setVelocity*(1+ptrSensorBar->velocitySetpoint);
+  setVelocityL = setVelocity*(1-ptrSensorBar->velocitySetpoint);
+  piController(setVelocityR, ptrControllerRight, ptrRightWheel);
+  piController(setVelocityL, ptrControllerLeft, ptrLeftWheel);
+  
+  //rightWheel.dcMotor->run(ptrRightWheel->direction);
+  //leftWheel.dcMotor->run(ptrLeftWheel->direction);
   rightWheel.dcMotor->setSpeed(ptrRightWheel->speed);
   ptrLeftWheel->dcMotor->setSpeed(ptrLeftWheel->speed);
-  //rightWheel.dcMotor->setSpeed(0);
-  //ptrLeftWheel->dcMotor->setSpeed(0);
-  //HC06.println(ptrSensorBar->goalY);
-  
-      for(int i = 0; i < 16; i++) {
-    HC06.print(sensorBar.lineDetected[i]);
-  }
-  HC06.println("");
-/*   HC06.print(ptrSensorBar->goalY*10);  
+  toc = micros();
+  timed = false;
+}
+HC06.println(toc-tic); 
+/*     Serial.print(ptrLeftWheel->direction);
+   Serial.print("     ");
+   Serial.println(ptrRightWheel->direction); */
+
+   
+  /*Serial.print("      ");
+  Serial.println(setVelocityR); 
+   HC06.print(ptrSensorBar->goalY*10);  
   HC06.print(",");
-  HC06.println(0); */
+  HC06.println(0); 
   //HC06.println(ptrSensorBar->errorInt);
   toc = micros();
 }
-//Serial.println(toc-tic);
-/*    for(int i = 0; i < 16; i++) {
+HC06.println(toc-tic);
+/   for(int i = 0; i < 16; i++) {
     Serial.print(sensorBar.lineDetected[i]);
   }  
   Serial.print("    ");
@@ -180,7 +217,7 @@ if (timed == true && run == true){
   Serial.println(ptrSensorBar->theta); */
 
 
-  /* 
+  /*
   rightWheel.dcMotor->setSpeed(0);
   ptrLeftWheel->dcMotor->setSpeed(0);
    */

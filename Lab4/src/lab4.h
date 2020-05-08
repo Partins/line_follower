@@ -33,6 +33,8 @@ typedef struct {
   float pGain;
   float iGain;
   float dGain;
+  float lastSpeed;
+  float lastError;
   float tot_integral;
   float totDerivative;
   float derivative;

@@ -81,21 +81,33 @@ void calculateVelocityDouble(Wheel *rightWheel, Wheel *leftWheel, float seconds)
 } */
 
 void calculateVelocity(Wheel *wheel, float seconds) {
-
+    float direction = 1;
+    if(wheel->direction == BACKWARD) {
+        direction = -1;
+    } 
     wheel->velocity = 0.12566*wheel->timedPulses/(618*seconds);
 
 }
 
 void piController(float setpoint, Controller *controller, Wheel *wheel) {
-    if (setpoint > 1){
+    
+    /*  if (setpoint > 1){
         setpoint = 1;
-    } else if (setpoint < 0) {
-        setpoint= 0;
-    }
+    } else if (setpoint < -1) {
+        setpoint = -1;
+    } */
     float error = setpoint - wheel->velocity;
     controller->error = error;
-    controller->tot_integral += error;
-    wheel->speed = (controller->pGain*error + controller->iGain*controller->tot_integral) * 255;
+    controller->tot_integral = controller->tot_integral + error;
+    controller->totDerivative = error - controller->lastError;
+    wheel->speed = controller->lastSpeed + ((controller->pGain)*(error) + (controller->iGain)*(controller->tot_integral) + (controller->dGain) * (controller->totDerivative)) * 255;
+    controller->lastSpeed = wheel->speed;
+    controller->lastError = error;
+    wheel->direction = FORWARD;
+    /* if (wheel->speed < 0) {
+        wheel->direction = BACKWARD;
+        wheel->speed *= -1;
+    }  */
 }
 
 
@@ -128,15 +140,14 @@ void findGoalPosition(SensorBar *sensor) {
     
     for (int i = 0; i<sensor->kNumOfSensors; i++) { 
         if (sensor->lineDetected[i] == true) {
-            sensor->goalY = sensor->sensorDistances[i]/(119);
-            cntr=1;
+            sensor->goalY += sensor->sensorDistances[i]/(119);
+            cntr++;
         }
     }
     if(cntr == 0) {
         //sensor->goalY += prevY;
-        sensor->error = prevY;
         sensor->errorInt += prevY;
-        sensor->errorDot = sensor->errorDot - prevY;
+        //sensor->errorDot = sensor->errorDot - prevY;
         cntr++;
     } else {
     sensor->goalY = sensor->goalY/cntr;
